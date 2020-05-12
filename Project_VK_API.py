@@ -15,10 +15,8 @@ class GodBot:
         self.session_api = self.vk_session.get_api()
         self.flag_dungeon = False
         self.flag_description = False
-        self.dungeon = ""
         self.cringe_locator = False
         self.longpoll = VkBotLongPoll(self.vk_session, '194508521')
-        self.description = ''
         self.deleting = False
         self.flag_dungeon_on = False
         self.levels = {1: 100, 2: 300, 3: 900, 4: 2700, 5: 8100, 6: 10000}
@@ -44,23 +42,26 @@ class GodBot:
     def remind(self, event, action):
         self.message(event, action)
 
-    def rander(self, event, heralt, mes=''):
+    def rander(self, event, rng, mes=''):
         self.session_api.messages.send(
             random_id=random.getrandbits(32),
             peer_id=event.obj.peer_id,
-            message=str(heralt) + '. ' + mes)
+            message=str(rng) + '. ' + mes)
 
     def commands(self, event):
         self.message(event, 'Вероятно, ты очень мало со мной знаком и не знаешь, на что я способен!\n'
                             'Я могу:\n'
                             'Кидать кубики. Напиши "/Рандом n", где n -  целое неотрицательное число.\n'
+                            'Исключать участников беседы. /кик [упоминание] - исключение упомянутого участника. Для корректной работы боту нужна админка.\n'
                             'Генерировать игровые ситуации. Напиши "/сгенерируй встречу", и я смоделирую случайную. \n'
                             'Могу делать персонажей для миниигр. Создай персонажа по образцу:\n /новый перс \n [Имя]\n [Класс]\n'
                             "Вы можете узнать его характеристики по команде '/стата перса'\n"
                             'Если у вас уже есть персонаж, можете написать "/фарм", чтобы порезать парочку крыс.\n'
-                            'Могу имитировать русскую рулетку. Просто напиши "Русская рулетка" и наслаждайся. Для корректной работы боту нужна админка.\n'
+                            'Могу имитировать русскую рулетку. Просто напиши "/Русская рулетка" и наслаждайся. Для корректной работы боту нужна админка.\n'
                             'Могу устраивать общий сбор. Напиши "/позови всех", чтобы бот упомянул всех участников чата. Команда для админов конфы.\n'
-                            '/запомнить [время в минутах] [действие] - напоминает вам сделать действие через некоторое время.'
+                            '/запомнить [время в минутах] [действие] - напоминает вам сделать действие через некоторое время.\n'
+                            'Список игровых команд можно узнать по команде /игра\n'
+                            '/техподдержка [текст сообщения] - обращение к администратору по особо важным вопросам, касающихся бота: уведомление о багах, ошибках и т.д.. За злоупотребление и использование не по назначению можно легко получить бан.'
                      )
 
     def kicking(self, event, id):
@@ -74,7 +75,6 @@ class GodBot:
                 for event in self.longpoll.listen():
                     if event.type == VkBotEventType.MESSAGE_NEW:
                         e = self.getmembers(event)
-                        print(self.getusers(event.obj.from_id)[0]['first_name'], ': ', event.obj.text)
                         ids = [ch[key] for ch in e['items'] for key in ch if (key == 'member_id' and int(ch[key]) > 0)]
 
                         admins = [ch[key] for ch in e['items'] for key in ch if
@@ -93,10 +93,35 @@ class GodBot:
                         elif text == "/помощь":
                             self.commands(event)
 
+                        elif text == '/игра':
+                            self.message(event, '/сгенерируй встречу - случайно генерирует игровую ситуацию\n'
+                                                '/болото событие - генерирует игровую ситуацию в болотной местности\n'
+                                                '/атрибут [id пользователя] [название] [значение] [на что влияет] - присваивает игроку навык\n'
+                                                '/снарядить [название предмета из инвентаря] - снаряжает персонажа предметом\n'
+                                                '/каст [название навыка] [цель] - использует навык\n'
+                                                '/побег - сбегает из битвы с монстром и полностью восстанавливает здоровье\n'
+                                                '/очисти инвентарь - очищает инвентарь\n'
+                                                '/дроп [название] [характеристики] [слот] - присваивает вашему персонажу предмет\n'
+                                                'разделителями для всех команд являются переносы строки. Таким образом примером запроса будет:\n'
+                                                '/дроп\n'
+                                                'Меч рыцаря\n'
+                                                '+100 к урону\n'
+                                                'weapon')
+
+                        elif text.startswith('/техподдержка'):
+                            helper = text[13:]
+                            admin_id = 219400207
+                            user_info = self.getusers(event.obj.from_id)
+                            self.session_api.messages.send(
+                                random_id=random.getrandbits(32),
+                                peer_id=admin_id,
+                                message="Запрос отправил: [id{}|{} {}]\n"
+                                        "Текст сообщения: \n{}".format(event.obj.from_id, user_info[0]['first_name'],
+                                                                     user_info[0]['last_name'], helper))
 
                         elif text.startswith('/запомнить'):
                             time = int(text.split()[1])
-                            action = 'Напоминаю про ' + text[13:] + '!'
+                            action = 'Напоминаю ' + text[13:] + '!'
                             action = '[id{}|{}]'.format(event.obj.from_id, action)
                             self.reminder[str(event.obj.from_id)] = Timer(time * 60, self.remind, args=[event, action])
                             self.reminder[str(event.obj.from_id)].start()
@@ -164,7 +189,7 @@ class GodBot:
                                     self.message(event, mess)
 
                         elif text == '/болото событие':
-                            if self.admin:
+                            if True:
                                 first = random.randint(1, 100)
                                 with open('swamp.json', 'r') as readfile:
                                     npc = json.load(readfile)
@@ -305,6 +330,7 @@ class GodBot:
                                 self.heroes.update({str(event.obj.from_id): hero})
                                 json.dump(self.heroes, writefile)
                             self.message(event, 'Снаряжено.')
+
                         elif text == "/очисти инвентарь":
                             with open('heroes.json', 'r') as readfile5:
                                 hero = json.load(readfile5)[str(event.object.from_id)]
@@ -313,6 +339,7 @@ class GodBot:
                                 self.heroes.update({str(event.obj.from_id): hero})
                                 json.dump(self.heroes, writefile)
                             self.message(event, 'Очищено.')
+
                         elif text == '/выброси оружие':
                             with open('heroes.json', 'r') as readfile5:
                                 hero = json.load(readfile5)[str(event.object.from_id)]
