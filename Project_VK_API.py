@@ -2,7 +2,6 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 import vk_api
 import json
 import random
-import time
 from threading import Timer
 
 
