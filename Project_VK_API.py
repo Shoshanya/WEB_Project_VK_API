@@ -118,6 +118,7 @@ class GodBot:
                                 message="Запрос отправил: [id{}|{} {}]\n"
                                         "Текст сообщения: \n{}".format(event.obj.from_id, user_info[0]['first_name'],
                                                                      user_info[0]['last_name'], helper))
+                            self.message(event, "Запрос отправлен на рассмотрение, ожидайте.")
 
                         elif text.startswith('/запомнить'):
                             time = int(text.split()[1])
